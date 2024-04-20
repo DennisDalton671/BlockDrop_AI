@@ -8,7 +8,7 @@ with the goal of maximizing the score by clearing lines, optimizing block placem
 Here's a look at the homescreen of Tetris AI:
 
 <div align="center">
-  <img src = "https://github.com/DennisDalton671/SteamCharts/blob/master/images/Tetris_Menu.jpg" alt = "HomeScreen Image" width = "300" height = "600">
+  <img src = "https://github.com/DennisDalton671/Tetris_AI/blob/master/images/Tetris_Menu.jpg" alt = "HomeScreen Image" width = "300" height = "600">
 </div>
 
 ### Features
@@ -24,7 +24,7 @@ Here's a look at the homescreen of Tetris AI:
 - A view of the in game screen:
 
 <div align="center">
-  <img src = "https://github.com/DennisDalton671/SteamCharts/blob/master/images/Tetris_Game.jpg" alt = "In game image" width = "300" height = "600">
+  <img src = "https://github.com/DennisDalton671/Tetris_AI/blob/master/images/Tetris_Game.jpg" alt = "In game image" width = "300" height = "600">
 </div>
 
 ### Getting Started
