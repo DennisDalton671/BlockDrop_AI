@@ -11,6 +11,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.tetrisai.View.GameScreen
 import com.example.tetrisai.View.MenuScreen
 import com.example.tetrisai.ViewModel.GameStateManager
+import com.example.tetrisai.ViewModel.GameStateManagerFactory
 
 @Composable
 fun TetrisApp(appContainer: AppContainer) {
@@ -28,9 +29,17 @@ fun TetrisApp(appContainer: AppContainer) {
             composable("menuScreen") {
                 MenuScreen().MenuScreenSetup(navController)
             }
-            composable("gameScreen") {
-                val gameState = viewModel<GameStateManager>()
+            composable("userGameScreen") {
+                val factory = GameStateManagerFactory(gameMode = 0)
+                val gameState = viewModel<GameStateManager>(factory = factory)
+                //val gameState = viewModel<GameStateManager>()
                 GameScreen().GameScreenSetup(gameView = gameState, navController)
+            }
+            composable("aiGameScreen") {
+                val factory = GameStateManagerFactory(gameMode = 1)
+                val gameState = viewModel<GameStateManager>(factory = factory)
+                //val gameState = viewModel<GameStateManager>()
+                GameScreen().GameScreenSetup(gameView = gameState, navController = navController)
             }
             // Add more destinations as needed
         }

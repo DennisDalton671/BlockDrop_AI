@@ -16,6 +16,7 @@ class GameLogic {
     var currentRotation: Int = 0
     var linesCleared: Int = 1
     var lockedPiece: Boolean = false
+    private var gameMode: Int = 0;
     private var handler = Handler(Looper.getMainLooper())
     private var lastDropTime = System.currentTimeMillis()
     private var dropInterval = 1000L
@@ -40,13 +41,16 @@ class GameLogic {
         //initializeGame()
     }
 
-    fun initializeGame() {
+    fun initializeGame(gameMode: Int) {
+        this.gameMode = gameMode
         // Reset or initialize other game state variables
         grid.clear() // Assuming you have a method to reset the grid
         _currentGridState.value = grid.getGridForUI(currentTetrimino,currentX,currentY,currentRotation)
         spawnTetrimino()
-        val (rotation, xPosition) = ai.chooseMove()
-        applyAIMove(rotation, xPosition)
+        if (gameMode == 1) {
+            val (rotation, xPosition) = ai.chooseMove()
+            applyAIMove(rotation, xPosition)
+        }
         startGameLoop()
         // Any other game initialization logic
     }
@@ -83,8 +87,10 @@ class GameLogic {
                 lockTetriminoInPlace()
                 lineClearing()
                 spawnTetrimino()
-                val (rotation, xPosition) = ai.chooseMove()
-                applyAIMove(rotation, xPosition)
+                if (gameMode == 1) {
+                    val (rotation, xPosition) = ai.chooseMove()
+                    applyAIMove(rotation, xPosition)
+                }
                 currentTetrimino?.let {
                     if (grid.checkGameOver(currentX, currentY, it.getShape())) {
                         endGame()
@@ -218,7 +224,7 @@ class GameLogic {
     }
 
     fun endGame() {
-        initializeGame()
+        initializeGame(gameMode = gameMode)
     }
 
 }

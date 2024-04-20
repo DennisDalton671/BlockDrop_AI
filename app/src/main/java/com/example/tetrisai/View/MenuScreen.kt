@@ -28,10 +28,16 @@ class MenuScreen {
                 modifier = Modifier.padding(bottom = 32.dp)
             )
             Button(
-                onClick = { navController.navigate("gameScreen") },
+                onClick = { navController.navigate("userGameScreen") },
                 modifier = Modifier.padding(16.dp)
             ) {
-                Text("Start Game", modifier = Modifier.padding(8.dp))
+                Text("Start User Game", modifier = Modifier.padding(8.dp))
+            }
+            Button(
+                onClick = { navController.navigate("aiGameScreen") },
+                modifier = Modifier.padding(16.dp)
+            ) {
+                Text("Start AI Game", modifier = Modifier.padding(8.dp))
             }
         }
     }

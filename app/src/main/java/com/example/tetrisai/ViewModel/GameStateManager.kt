@@ -1,6 +1,7 @@
 package com.example.tetrisai.ViewModel
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.tetrisai.model.Cell
 import com.example.tetrisai.model.GameLogic
@@ -16,7 +17,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 
-class GameStateManager : ViewModel() {
+class GameStateManager(private val gameMode: Int) : ViewModel() {
 
     private val _score = MutableStateFlow(0)
     val score: StateFlow<Int> = _score.asStateFlow()
@@ -39,7 +40,7 @@ class GameStateManager : ViewModel() {
     private val gameLogic = GameLogic()
 
     init {
-        startGame()
+        startGame(gameMode)
         gameLogic.currentGridState.onEach { newGrid ->
             _gridRepresentation.value = newGrid
         }.launchIn(viewModelScope)
@@ -54,10 +55,10 @@ class GameStateManager : ViewModel() {
         }
     }
 
-    fun startGame() {
+    fun startGame(mode: Int) {
         // Initialize game state here
         // For example, reset score and level and generate a starting grid
-        gameLogic.initializeGame()
+        gameLogic.initializeGame(gameMode = mode)
         _score.value = gameLogic.score.value
         _level.value = gameLogic.level.value
         _lines.value = gameLogic.linesCleared
@@ -82,4 +83,13 @@ class GameStateManager : ViewModel() {
         gameLogic.moveRight()
     }
 
+}
+class GameStateManagerFactory(private val gameMode: Int) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(GameStateManager::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return GameStateManager(gameMode) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
+    }
 }
