@@ -5,12 +5,27 @@
 This project aims to develop a Tetris AI using heuristic and machine learning techniques. The AI plays Tetris, making decisions based on the current state of the game board, 
 with the goal of maximizing the score by clearing lines, optimizing block placement, and minimizing gaps. 
 
+Here's a look at the homescreen of Tetris AI:
+
+<div align="center">
+  <img src = "https://github.com/DennisDalton671/SteamCharts/blob/master/images/Tetris_Menu.jpg" alt = "HomeScreen Image" width = "300" height = "600">
+</div>
+
 ### Features
 
 - Heuristic AI for Tetris game logic.
+
 - Machine learning model to enhance decision-making.
+
 - Pathfinding algorithm for optimal block placement.
+
 - Analysis of different strategies for playing Tetris.
+
+- A view of the in game screen:
+
+<div align="center">
+  <img src = "https://github.com/DennisDalton671/SteamCharts/blob/master/images/Tetris_Game.jpg" alt = "In game image" width = "300" height = "600">
+</div>
 
 ### Getting Started
 
