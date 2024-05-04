@@ -79,7 +79,7 @@ class GridRepresentation(val width: Int, val height: Int) {
 //        return grid.height - shape.size
 //    }
 //
-    fun isValidPlacement(tetrimino: TetrisBlock, rotation: Int, xPosition: Int, yPosition: Int, grid: GridRepresentation): Boolean {
+/*    fun isValidPlacement(tetrimino: TetrisBlock, rotation: Int, xPosition: Int, yPosition: Int, grid: GridRepresentation): Boolean {
         val shape = tetrimino.getShape(rotation)
         for (y in shape.indices) {
             for (x in shape[y].indices) {
@@ -96,10 +96,34 @@ class GridRepresentation(val width: Int, val height: Int) {
             }
         }
         return true // No collisions found, placement is valid
+    }*/
+
+    fun isValidPlacement(
+        shape: Array<BooleanArray>,
+        xPosition: Int,
+        yPosition: Int,
+        grid: GridRepresentation
+    ): Boolean {
+        // Iterate over each cell in the shape
+        for (y in shape.indices) {
+            for (x in shape[y].indices) {
+                if (shape[y][x]) { // Check only filled parts of the Tetrimino
+                    val gridX = x + xPosition
+                    val gridY = y + yPosition
+                    if (gridX !in 0 until grid.width || gridY !in 0 until grid.height) {
+                        return false // The Tetrimino would be out of grid bounds
+                    }
+                    if (grid.isOccupied(gridX, gridY)) {
+                        return false // The Tetrimino would overlap with an existing filled cell
+                    }
+                }
+            }
+        }
+        return true // The placement is valid across all checked positions
     }
 
 
-    fun placeTetriminoHypothetically(tetrimino: TetrisBlock, rotation: Int, xPositionOriginal: Int, grid: GridRepresentation): GridRepresentation {
+/*    fun placeTetriminoHypothetically(tetrimino: TetrisBlock, rotation: Int, xPositionOriginal: Int, grid: GridRepresentation): GridRepresentation {
         val hypotheticalGrid = grid.clone()
         val shape = tetrimino.getShape(rotation)
 
@@ -124,15 +148,110 @@ class GridRepresentation(val width: Int, val height: Int) {
         }
 
         return hypotheticalGrid
+    }*/
+
+/*    fun placeTetriminoHypothetically(
+        trimmedShape: Array<BooleanArray>,
+        xPosition: Int,
+        yPosition: Int,
+        grid: GridRepresentation
+    ): GridRepresentation {
+        val hypotheticalGrid = grid.clone()  // Clone the current grid for hypothetical placement
+
+        // Place the Tetrimino shape onto the hypothetical grid at the calculated position
+        for (y in trimmedShape.indices) {
+            for (x in trimmedShape[y].indices) {
+                if (trimmedShape[y][x]) {  // If this part of the Tetrimino is filled
+                    val gridX = x + xPosition
+                    val gridY = y + yPosition
+                    if (gridX in 0 until hypotheticalGrid.width && gridY in 0 until hypotheticalGrid.height) {
+                        hypotheticalGrid.placeBlock(gridX, gridY)  // Use your existing method to place the block
+                    }
+                }
+            }
+        }
+
+        return hypotheticalGrid
+    }*/
+
+    fun placeTetriminoHypothetically(
+        trimmedShape: Array<BooleanArray>,
+        xPosition: Int,
+        grid: GridRepresentation
+    ): GridRepresentation {
+        val hypotheticalGrid = grid.clone()
+
+        // Calculate the lowest possible Y position for the Tetrimino to be placed
+        val lowestY = findLowestYPositionForShape(trimmedShape, xPosition, grid)
+
+        // Place the Tetrimino shape onto the hypothetical grid at the calculated position
+        for (y in trimmedShape.indices) {
+            for (x in trimmedShape[y].indices) {
+                if (trimmedShape[y][x]) {
+                    val gridX = x + xPosition
+                    val gridY = y + lowestY
+                    if (gridX in 0 until hypotheticalGrid.width && gridY in 0 until hypotheticalGrid.height) {
+                        hypotheticalGrid.placeBlock(gridX, gridY)
+                    }
+                }
+            }
+        }
+
+        return hypotheticalGrid
     }
 
-    fun simulateDirectDescentWithStartingPosition(tetrimino: TetrisBlock, rotation: Int, startXPosition: Int, grid: GridRepresentation): Int {
+    fun findLowestYPositionForShape(
+        shape: Array<BooleanArray>,
+        xPosition: Int,
+        grid: GridRepresentation
+    ): Int {
+        var lowestY = 0
+        var valid = true
+
+        while (valid) {
+            // Check if the current Y position is valid for the shape
+            for (y in shape.indices) {
+                for (x in shape[y].indices) {
+                    if (shape[y][x]) {
+                        val gridX = x + xPosition
+                        val gridY = y + lowestY
+                        // Check if this part of the shape goes out of grid bounds or collides
+                        if (gridY >= grid.height || grid.isOccupied(gridX, gridY)) {
+                            valid = false
+                            break
+                        }
+                    }
+                }
+                if (!valid) break
+            }
+            if (valid) lowestY++
+        }
+
+        return max(0, lowestY - 1)
+    }
+
+/*    fun simulateDirectDescentWithStartingPosition(tetrimino: TetrisBlock, rotation: Int, startXPosition: Int, grid: GridRepresentation): Int {
         var startY = 0
         while (isValidPlacement(tetrimino, rotation, startXPosition, startY, grid)) {
             startY++
         }
         // Return the last valid Y position before a collision would occur
         return max(0, startY - 1)
+    }*/
+
+    fun simulateDirectDescentWithStartingPosition(
+        shape: Array<BooleanArray>,
+        startXPosition: Int,
+        grid: GridRepresentation
+    ): Int {
+        var startY = 0  // Start at the topmost possible position
+        while (true) {
+            // Assume isValidPlacement always returns true since moves are pre-validated
+            if (!isValidPlacement(shape, startXPosition, startY, grid)) {
+                return max(0, startY - 1) // Return the last valid position
+            }
+            startY++
+        }
     }
 
     fun calculateLeftmostXPosition(tetrimino: TetrisBlock, rotation: Int, grid: GridRepresentation): Int {

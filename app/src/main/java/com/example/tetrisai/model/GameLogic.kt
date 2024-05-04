@@ -102,6 +102,7 @@ class GameLogic {
     }
 
     private fun applyAIMove(desiredRotation: Int, desiredXPosition: Int) {
+        System.out.println("X Position: " + desiredXPosition)
         // Adjust the rotation to match the AI's decision
         // This loop accounts for the possibility that the Tetrimino needs to be rotated multiple times.
         while (currentRotation != desiredRotation) {
