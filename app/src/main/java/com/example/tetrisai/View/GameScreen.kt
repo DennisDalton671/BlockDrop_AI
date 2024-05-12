@@ -4,10 +4,7 @@ import android.annotation.SuppressLint
 import android.view.ViewConfiguration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.forEachGesture
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -22,47 +19,68 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.PointerInputScope
-import androidx.compose.ui.input.pointer.consumeAllChanges
-import androidx.compose.ui.input.pointer.consumePositionChange
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.ViewModel
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.tetrisai.ViewModel.GameStateManager
 import com.example.tetrisai.model.Cell
-import com.example.tetrisai.model.GridRepresentation
 import kotlinx.coroutines.launch
 import kotlin.math.abs
-import kotlin.math.absoluteValue
 
 class GameScreen() {
 
 
+    private var startTime: Long = 0
+    private var endTime: Long = 0
     @SuppressLint("StateFlowValueCalledInComposition")
     @Composable
-    fun GameScreenSetup(gameView: GameStateManager, navController: NavController) {
+    fun GameScreenSetup(gameView: GameStateManager, navController: NavController, gameState: Int) {
 
         val score by gameView.score.collectAsState()
         val level by gameView.level.collectAsState()
         val lines by gameView.lines.collectAsState()
         val grid by gameView.gridRepresentation.collectAsState()
+        val gameOver by gameView.gameOver.collectAsState()
+        startTime = remember { System.currentTimeMillis() }
+        System.out.println("Start Time: $startTime")
 
-        Column(modifier = Modifier) {
+        // Use LaunchedEffect to perform side effects when gameOver changes
+        LaunchedEffect(gameOver) {
+            if (gameOver) {
+                endTime = System.currentTimeMillis()
+                System.out.println("End Time: $endTime")
+                val finalTime = getFormattedGameDuration()
+                val gameStats = gameView.gameStats()
+
+                // Replace "mainMenu" with the name of your actual main menu route
+                    if (gameState == 0)
+                        navController.navigate("endGameScreen/$score/$lines/$level/$finalTime/${gameStats.singleLinesCleared}/${gameStats.doubleLinesCleared}/${gameStats.tripleLinesCleared}/${gameStats.tetrisLinesCleared}/0")
+                    if (gameState == 1)
+                        navController.navigate("endGameScreen/$score/$lines/$level/$finalTime/${gameStats.singleLinesCleared}/${gameStats.doubleLinesCleared}/${gameStats.tripleLinesCleared}/${gameStats.tetrisLinesCleared}/1")
+                    if (gameState == 2)
+                        navController.navigate("endGameScreen/$score/$lines/$level/$finalTime/${gameStats.singleLinesCleared}/${gameStats.doubleLinesCleared}/${gameStats.tripleLinesCleared}/${gameStats.tetrisLinesCleared}/2")
+
+            }
+        }
+
+        Column(modifier = Modifier.background(Color.Black)) {
             val topBarPadding = 16.dp
             val modifier = Modifier.padding(topBarPadding)
             GameTopBar(score, level, lines, modifier)
@@ -73,15 +91,56 @@ class GameScreen() {
 
     @Composable
     fun GameTopBar(score: Int, level: Int, lines: Int, modifier: Modifier = Modifier) {
+        // Set the background color to black and text color to white
+        val blackBackground = Color.Black
+        val lightGrayText = Color.LightGray
+
         Row(
             horizontalArrangement = Arrangement.SpaceBetween,
             modifier = modifier
                 .fillMaxWidth()
+                .background(blackBackground) // Apply black background to the entire row
+                .padding(horizontal = 16.dp, vertical = 8.dp) // Optional padding for spacing
         ) {
-            Text(text = "Score: $score")
-            Text(text = "Level: $level")
-            Text(text = "Lines Cleared: ${lines - 1}")
+            Text(
+                buildAnnotatedString {
+                    withStyle(style = SpanStyle(color = lightGrayText, fontSize = 16.sp)) {
+                        append("Score: ")
+                    }
+                    withStyle(style = SpanStyle(color = lightGrayText, fontSize = calculateFontSize(score))) {
+                        append("$score")
+                    }
+                }
+            )
+            Text(
+                buildAnnotatedString {
+                    withStyle(style = SpanStyle(color = lightGrayText, fontSize = 16.sp)) {
+                        append("Level: ")
+                    }
+                    withStyle(style = SpanStyle(color = lightGrayText, fontSize = calculateFontSize(level))) {
+                        append("$level")
+                    }
+                }
+            )
+            Text(
+                buildAnnotatedString {
+                    withStyle(style = SpanStyle(color = lightGrayText, fontSize = 16.sp)) {
+                        append("Lines Cleared: ")
+                    }
+                    withStyle(style = SpanStyle(color = lightGrayText, fontSize = calculateFontSize(lines - 1))) {
+                        append("${lines - 1}")
+                    }
+                }
+            )
         }
+    }
+
+    fun calculateFontSize(number: Int): TextUnit = when {
+        number < 1000 -> 16.sp
+        number < 10000 -> 14.sp
+        number < 100000 -> 12.sp
+        number < 1000000 -> 10.sp
+        else -> 8.sp
     }
 
     @Composable
@@ -111,6 +170,7 @@ class GameScreen() {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(16.dp)
+                .background(Color.Black)
                 .pointerInput(Unit) {
                     var touchDownPosition = Offset.Unspecified
                     var lastPosition = Offset.Unspecified
@@ -186,8 +246,8 @@ class GameScreen() {
                             Box(
                                 modifier = Modifier
                                     .size(cellSize)
-                                    .border(1.dp, Color.Black)
-                                    .background(if (cell == Cell.FILLED) Color.Red else Color.LightGray)
+                                    .border(1.dp, Color.LightGray)
+                                    .background(if (cell == Cell.FILLED) Color.Red else Color.Black)
                             )
                         }
                     }
@@ -230,5 +290,13 @@ class GameScreen() {
         val widthBasedSize = drawableWidth / columns
         val heightBasedSize = drawableHeight / rows
         return minOf(widthBasedSize, heightBasedSize)
+    }
+
+    fun getFormattedGameDuration(): String {
+        val durationMillis = endTime - startTime
+        val seconds = (durationMillis / 1000) % 60
+        val minutes = (durationMillis / (1000 * 60)) % 60
+        val hours = (durationMillis / (1000 * 60 * 60)) % 24
+        return String.format("%02d:%02d:%02d", hours, minutes, seconds)
     }
 }

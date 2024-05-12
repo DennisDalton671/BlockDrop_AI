@@ -26,6 +26,29 @@ class GridRepresentation(val width: Int, val height: Int) {
         return newGrid
     }
 
+    fun countHoles(): Int {
+        var holes = 0
+
+        // Iterate through each column
+        for (x in 0 until width) {
+            var blockFound = false
+
+            // Traverse from top to bottom in each column
+            for (y in 0 until height) {
+                val cell = grid[y][x]
+
+                if (cell == Cell.FILLED) {
+                    blockFound = true
+                } else if (blockFound && cell == Cell.EMPTY) {
+                    // Increment the hole count for each empty cell below a filled cell
+                    holes++
+                }
+            }
+        }
+
+        return holes
+    }
+
     fun getCell(x: Int, y: Int): Cell {
         if (x in 0 until width && y in 0 until height) {
             return grid[y][x]
@@ -315,15 +338,19 @@ class GridRepresentation(val width: Int, val height: Int) {
         }
     }
 
-    fun checkGameOver(spawnX: Int, spawnY: Int, blockShape: Array<BooleanArray>): Boolean {
-        for (y in blockShape.indices) {
-            for (x in blockShape[0].indices) {
-                if (blockShape[y][x] && isOccupied(spawnX + x, spawnY + y)) {
-                    return true // There is an overlap, so it's game over
-                }
+    fun checkGameOver(): Boolean {
+        // Assuming the top row is the first row of the grid
+        val topRowIndex = 0
+        System.out.println("Checking for game over")
+        // Iterate through all columns in the top row
+        for (x in 0 until width) {
+            if (grid[topRowIndex][x] == Cell.FILLED) {
+                System.out.println(grid[x][topRowIndex])
+                return true // If any cell is filled in the top row, it's game over
             }
         }
-        return false // No overlap, the game can continue
+
+        return false // No filled cells in the top row, so it's not game over
     }
 
     fun getGridForUI(tetrisBlock: TetrisBlock?, currentX: Int, currentY: Int, rotation: Int): Array<Array<Cell>> {

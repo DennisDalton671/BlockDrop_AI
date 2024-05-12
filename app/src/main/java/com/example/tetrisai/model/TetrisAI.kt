@@ -2,6 +2,7 @@ package com.example.tetrisai.model
 
 import kotlin.math.abs
 import kotlin.math.min
+import kotlin.math.pow
 
 class TetrisAI(val gameLogic: GameLogic) {
 
@@ -179,45 +180,64 @@ class TetrisAI(val gameLogic: GameLogic) {
         val completeLines = calculateCompleteLines(gridAfter)
         val holes = calculateHoles(gridAfter)
         val bumpiness = calculateBumpiness(gridAfter)
+        val unreachableHoles = calculateUnreachableHoles(gridAfter)
 
         System.out.println("Aggregate Height After: $aggregateHeightAfter\nComplete Lines: $completeLines\nHoles: $holes\nBumpiness: $bumpiness\n--------------------")
 
 
         val aggregateHeightWeight = -15.0
-        val completeLinesWeight = 100.0
+        val completeLinesWeight = 50.0
         val holesWeight = -15.0
-        val bumpinessWeight = -5.0
+        val bumpinessWeight = -10.0
+        //val unreachableHolesWeight = -1.0
 
         return ((aggregateHeightAfter * aggregateHeightWeight) +
                 (completeLines * completeLinesWeight) +
-                (holes + holesWeight) +
+                (holes * holesWeight) +
                 (bumpiness * bumpinessWeight))
+                //(unreachableHoles * unreachableHolesWeight))
 
     }
 
     private fun calculateAggregateHeight(grid: GridRepresentation): Double {
-        // Example: Sum the height of the tallest block in each column
-        var totalHeight = 0
+        var totalHeightPenalty = 0.0
+        val maxHeight = grid.height
+
         for (x in 0 until grid.width) {
-            for (y in 0 until grid.height) {
+            for (y in 0 until maxHeight) {
                 if (grid.getCell(x, y) == Cell.FILLED) {
-                    totalHeight += (grid.height - y)
+                    val cellHeight = maxHeight - y
+                    val exponentialPenalty = Math.pow(1.2, (maxHeight - y) / 5.0) // Example base of 1.2 and interval of 5
+                    totalHeightPenalty += cellHeight * exponentialPenalty
                     break // Stop at the first filled cell from the top
                 }
             }
         }
-        return totalHeight.toDouble()
+
+        return totalHeightPenalty
     }
 
     private fun calculateCompleteLines(grid: GridRepresentation): Double {
-        // Example: Count the number of complete lines
         var completeLines = 0
+        var score = 0.0
+
+        // Count the number of complete lines
         for (y in 0 until grid.height) {
             if ((0 until grid.width).all { x -> grid.getCell(x, y) == Cell.FILLED }) {
                 completeLines++
             }
         }
-        return completeLines.toDouble()
+
+        // Score calculation based on exponential reward
+        when (completeLines) {
+            1 -> score = 1.0
+            2 -> score = 5.0
+            3 -> score = 20.0
+            4 -> score = 100.0
+            else -> score = 0.0
+        }
+
+        return score
     }
 
     private fun calculateHoles(grid: GridRepresentation): Double {
@@ -250,6 +270,46 @@ class TetrisAI(val gameLogic: GameLogic) {
         }
         return bumpiness
 
+    }
+
+    private fun calculateUnreachableHoles(grid: GridRepresentation): Double {
+        val visited = Array(grid.height) { BooleanArray(grid.width) { false } }
+        var unreachablePenalty = 0.0
+
+        // Helper function for flood fill
+        fun floodFill(x: Int, y: Int, surrounded: BooleanArray): Int {
+            if (x !in 0 until grid.width || y !in 0 until grid.height) {
+                surrounded[0] = false // Indicates the region is not fully surrounded
+                return 0
+            }
+            if (visited[y][x] || grid.getCell(x, y) != Cell.EMPTY) return 0
+            visited[y][x] = true
+
+            // Explore neighbors and accumulate empty cells
+            var size = 1
+            size += floodFill(x + 1, y, surrounded)
+            size += floodFill(x - 1, y, surrounded)
+            size += floodFill(x, y + 1, surrounded)
+            size += floodFill(x, y - 1, surrounded)
+            return size
+        }
+
+        // Perform a flood-fill search across the entire grid
+        for (x in 0 until grid.width) {
+            for (y in 0 until grid.height) {
+                if (grid.getCell(x, y) == Cell.EMPTY && !visited[y][x]) {
+                    val surrounded = booleanArrayOf(true)
+                    val holeSize = floodFill(x, y, surrounded)
+
+                    if (surrounded[0]) {
+                        // Apply exponential penalty or any other formula
+                        unreachablePenalty += holeSize.toDouble().pow(2) // Example: quadratic penalty
+                    }
+                }
+            }
+        }
+
+        return unreachablePenalty
     }
 
     private fun calculateAverageColumnHeight(grid: GridRepresentation): Double {

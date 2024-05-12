@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.tetrisai.model.Cell
 import com.example.tetrisai.model.GameLogic
+import com.example.tetrisai.model.GameStats
 import com.example.tetrisai.model.GridRepresentation
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -53,6 +54,9 @@ class GameStateManager(private val gameMode: Int) : ViewModel() {
         gameLogic.onLineUpdated = { newLine ->
             _lines.value = newLine
         }
+        gameLogic.onGameOver = { newState ->
+            _gameOver.value = newState
+        }
     }
 
     fun startGame(mode: Int) {
@@ -81,6 +85,12 @@ class GameStateManager(private val gameMode: Int) : ViewModel() {
 
     fun moveRight() {
         gameLogic.moveRight()
+    }
+
+
+    // Method to calculate the duration in a formatted string
+    fun gameStats() : GameStats {
+        return gameLogic.stats
     }
 
 }
