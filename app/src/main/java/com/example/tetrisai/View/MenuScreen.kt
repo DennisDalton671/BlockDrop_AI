@@ -4,6 +4,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,10 +12,14 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -76,7 +81,7 @@ class MenuScreen {
             val buttonPositions = listOf(startUserGamePosition, startAIGamePosition, startMachineAIGamePosition)
             var menuBackgroundGrid by remember { mutableStateOf(generateMenuBackgroundGrid(columns, rows, buttonPositions)) }
 
-            // LaunchedEffect to update the grid pattern every 5 seconds
+            // LaunchedEffect to update the grid pattern every 2 seconds
             LaunchedEffect(Unit) {
                 while (true) {
                     delay(2000)
@@ -136,6 +141,24 @@ class MenuScreen {
                         )
                     }
                 }
+            }
+
+            // Settings Button
+            Box(
+                modifier = Modifier
+                    .size(cellSize)  // 2x2 blocks
+                    .offset(x = (screenWidth - horizontalPadding - cellSize * 2), y = verticalPadding + cellSize) // Positioned one block down and one block left from the right wall
+                    .clickable { navController.navigate("settingsScreen") }
+                    .background(Color.Black) // Background color to make it visible, replace with your design
+                    .border(1.dp, Color.LightGray),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Settings,
+                    contentDescription = "Settings",
+                    tint = Color.LightGray,
+                    modifier = Modifier.size(cellSize)
+                )
             }
         }
     }

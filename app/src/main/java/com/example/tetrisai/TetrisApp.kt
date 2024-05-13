@@ -17,6 +17,7 @@ import androidx.navigation.navArgument
 import com.example.tetrisai.View.EndGameScreen
 import com.example.tetrisai.View.GameScreen
 import com.example.tetrisai.View.MenuScreen
+import com.example.tetrisai.View.SettingsPage
 import com.example.tetrisai.ViewModel.GameStateManager
 import com.example.tetrisai.ViewModel.GameStateManagerFactory
 
@@ -80,6 +81,9 @@ fun TetrisApp(appContainer: AppContainer) {
                     gameState = backStackEntry.arguments?.getInt("gameState") ?: 0,
                     navController = navController
                 )
+            }
+            composable("settingsScreen") {
+                SettingsPage(navController)
             }
             // Add more destinations as needed
         }
