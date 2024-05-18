@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -46,12 +47,12 @@ import kotlin.math.abs
 
 class GameScreen() {
 
-
     private var startTime: Long = 0
     private var endTime: Long = 0
+
     @SuppressLint("StateFlowValueCalledInComposition")
     @Composable
-    fun GameScreenSetup(gameView: GameStateManager, navController: NavController, gameState: Int) {
+    fun GameScreenSetup(gameView: GameStateManager, navController: NavController, themeSettings: MutableState<ThemeSettings>, gameState: Int) {
 
         val score by gameView.score.collectAsState()
         val level by gameView.level.collectAsState()
@@ -59,75 +60,64 @@ class GameScreen() {
         val grid by gameView.gridRepresentation.collectAsState()
         val gameOver by gameView.gameOver.collectAsState()
         startTime = remember { System.currentTimeMillis() }
-        System.out.println("Start Time: $startTime")
 
         // Use LaunchedEffect to perform side effects when gameOver changes
         LaunchedEffect(gameOver) {
             if (gameOver) {
                 endTime = System.currentTimeMillis()
-                System.out.println("End Time: $endTime")
                 val finalTime = getFormattedGameDuration()
                 val gameStats = gameView.gameStats()
 
-                // Replace "mainMenu" with the name of your actual main menu route
-                    if (gameState == 0)
-                        navController.navigate("endGameScreen/$score/$lines/$level/$finalTime/${gameStats.singleLinesCleared}/${gameStats.doubleLinesCleared}/${gameStats.tripleLinesCleared}/${gameStats.tetrisLinesCleared}/0")
-                    if (gameState == 1)
-                        navController.navigate("endGameScreen/$score/$lines/$level/$finalTime/${gameStats.singleLinesCleared}/${gameStats.doubleLinesCleared}/${gameStats.tripleLinesCleared}/${gameStats.tetrisLinesCleared}/1")
-                    if (gameState == 2)
-                        navController.navigate("endGameScreen/$score/$lines/$level/$finalTime/${gameStats.singleLinesCleared}/${gameStats.doubleLinesCleared}/${gameStats.tripleLinesCleared}/${gameStats.tetrisLinesCleared}/2")
-
+                // Navigate to the end game screen with game stats
+                val route = "endGameScreen/$score/$lines/$level/$finalTime/${gameStats.singleLinesCleared}/${gameStats.doubleLinesCleared}/${gameStats.tripleLinesCleared}/${gameStats.tetrisLinesCleared}/$gameState"
+                navController.navigate(route)
             }
         }
 
-        Column(modifier = Modifier.background(Color.Black)) {
+        Column(modifier = Modifier.background(themeSettings.value.backgroundColor)) {
             val topBarPadding = 16.dp
             val modifier = Modifier.padding(topBarPadding)
-            GameTopBar(score, level, lines, modifier)
-            GameGrid(grid, topBarPadding, gameView)
+            GameTopBar(score, level, lines, modifier, themeSettings)
+            GameGrid(grid, topBarPadding, gameView, themeSettings)
         }
     }
 
 
     @Composable
-    fun GameTopBar(score: Int, level: Int, lines: Int, modifier: Modifier = Modifier) {
-        // Set the background color to black and text color to white
-        val blackBackground = Color.Black
-        val lightGrayText = Color.LightGray
-
+    fun GameTopBar(score: Int, level: Int, lines: Int, modifier: Modifier = Modifier, themeSettings: MutableState<ThemeSettings>) {
         Row(
             horizontalArrangement = Arrangement.SpaceBetween,
             modifier = modifier
                 .fillMaxWidth()
-                .background(blackBackground) // Apply black background to the entire row
+                .background(themeSettings.value.backgroundColor) // Apply background color from themeSettings
                 .padding(horizontal = 16.dp, vertical = 8.dp) // Optional padding for spacing
         ) {
             Text(
                 buildAnnotatedString {
-                    withStyle(style = SpanStyle(color = lightGrayText, fontSize = 16.sp)) {
+                    withStyle(style = SpanStyle(color = themeSettings.value.textColor, fontSize = 16.sp)) {
                         append("Score: ")
                     }
-                    withStyle(style = SpanStyle(color = lightGrayText, fontSize = calculateFontSize(score))) {
+                    withStyle(style = SpanStyle(color = themeSettings.value.textColor, fontSize = calculateFontSize(score))) {
                         append("$score")
                     }
                 }
             )
             Text(
                 buildAnnotatedString {
-                    withStyle(style = SpanStyle(color = lightGrayText, fontSize = 16.sp)) {
+                    withStyle(style = SpanStyle(color = themeSettings.value.textColor, fontSize = 16.sp)) {
                         append("Level: ")
                     }
-                    withStyle(style = SpanStyle(color = lightGrayText, fontSize = calculateFontSize(level))) {
+                    withStyle(style = SpanStyle(color = themeSettings.value.textColor, fontSize = calculateFontSize(level))) {
                         append("$level")
                     }
                 }
             )
             Text(
                 buildAnnotatedString {
-                    withStyle(style = SpanStyle(color = lightGrayText, fontSize = 16.sp)) {
+                    withStyle(style = SpanStyle(color = themeSettings.value.textColor, fontSize = 16.sp)) {
                         append("Lines Cleared: ")
                     }
-                    withStyle(style = SpanStyle(color = lightGrayText, fontSize = calculateFontSize(lines - 1))) {
+                    withStyle(style = SpanStyle(color = themeSettings.value.textColor, fontSize = calculateFontSize(lines - 1))) {
                         append("${lines - 1}")
                     }
                 }
@@ -144,7 +134,7 @@ class GameScreen() {
     }
 
     @Composable
-    fun GameGrid(grid: Array<Array<Cell>>, topBarPadding: Dp, gameView: GameStateManager) {
+    fun GameGrid(grid: Array<Array<Cell>>, topBarPadding: Dp, gameView: GameStateManager, themeSettings: MutableState<ThemeSettings>) {
 
         val configuration = LocalConfiguration.current
         val screenWidth = configuration.screenWidthDp.dp
@@ -170,7 +160,7 @@ class GameScreen() {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(16.dp)
-                .background(Color.Black)
+                .background(themeSettings.value.backgroundColor)
                 .pointerInput(Unit) {
                     var touchDownPosition = Offset.Unspecified
                     var lastPosition = Offset.Unspecified
@@ -246,8 +236,8 @@ class GameScreen() {
                             Box(
                                 modifier = Modifier
                                     .size(cellSize)
-                                    .border(1.dp, Color.LightGray)
-                                    .background(if (cell == Cell.FILLED) Color.Red else Color.Black)
+                                    .border(1.dp, themeSettings.value.textColor)
+                                    .background(if (cell == Cell.FILLED) themeSettings.value.blockColor else themeSettings.value.backgroundColor)
                             )
                         }
                     }

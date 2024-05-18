@@ -1,10 +1,12 @@
 package com.example.tetrisai
 
+import android.media.MediaPlayer
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -18,13 +20,23 @@ import com.example.tetrisai.View.EndGameScreen
 import com.example.tetrisai.View.GameScreen
 import com.example.tetrisai.View.MenuScreen
 import com.example.tetrisai.View.SettingsPage
+import com.example.tetrisai.View.ThemeSettings
+import com.example.tetrisai.View.rememberThemeSettings
 import com.example.tetrisai.ViewModel.GameStateManager
 import com.example.tetrisai.ViewModel.GameStateManagerFactory
 
 @Composable
-fun TetrisApp(appContainer: AppContainer) {
+fun TetrisApp(
+    appContainer: AppContainer,
+    mediaPlayer: MediaPlayer,
+    initialVolume: Float,
+    saveVolume: (Float) -> Unit,
+    themeSettings: MutableState<ThemeSettings>,
+    saveThemeSettings: (ThemeSettings) -> Unit
+) {
 // Use Material3 if available, or Material2's Scaffold as shown
     val navController = rememberNavController()
+    //val themeSettings = rememberThemeSettings()
 
     Scaffold(
         // Scaffold structure here, if you're using additional UI elements like TopAppBar
@@ -36,25 +48,25 @@ fun TetrisApp(appContainer: AppContainer) {
             modifier = Modifier.padding(innerPadding)
         ) {
             composable("menuScreen") {
-                MenuScreen().MenuScreenSetup(navController)
+                MenuScreen().MenuScreenSetup(navController, themeSettings)
             }
             composable("userGameScreen") {
                 val factory = GameStateManagerFactory(gameMode = 0)
                 val gameState = viewModel<GameStateManager>(factory = factory)
                 //val gameState = viewModel<GameStateManager>()
-                GameScreen().GameScreenSetup(gameView = gameState, navController, 0)
+                GameScreen().GameScreenSetup(gameView = gameState, navController, themeSettings = themeSettings, 0)
             }
             composable("aiGameScreen") {
                 val factory = GameStateManagerFactory(gameMode = 1)
                 val gameState = viewModel<GameStateManager>(factory = factory)
                 //val gameState = viewModel<GameStateManager>()
-                GameScreen().GameScreenSetup(gameView = gameState, navController = navController,1)
+                GameScreen().GameScreenSetup(gameView = gameState, navController = navController, themeSettings = themeSettings, 1)
             }
             composable("machineAiGameScreen") {
                 val factory = GameStateManagerFactory(gameMode = 2)
                 val gameState = viewModel<GameStateManager>(factory = factory)
                 //val gameState = viewModel<GameStateManager>()
-                GameScreen().GameScreenSetup(gameView = gameState, navController = navController,1)
+                GameScreen().GameScreenSetup(gameView = gameState, navController = navController, themeSettings = themeSettings, 1)
             }
             composable("endGameScreen/{score}/{linesCleared}/{level}/{timePlayed}/{singleLines}/{doubleLines}/{tripleLines}/{tetrisLines}/{gameState}",
                 arguments = listOf(
@@ -79,11 +91,12 @@ fun TetrisApp(appContainer: AppContainer) {
                     tripleLines = backStackEntry.arguments?.getInt("tripleLines") ?: 0,
                     tetrisLines = backStackEntry.arguments?.getInt("tetrisLines") ?: 0,
                     gameState = backStackEntry.arguments?.getInt("gameState") ?: 0,
-                    navController = navController
+                    navController = navController,
+                    themeSettings = themeSettings
                 )
             }
             composable("settingsScreen") {
-                SettingsPage(navController)
+                SettingsPage(navController, themeSettings, mediaPlayer, saveVolume, saveThemeSettings)
             }
             // Add more destinations as needed
         }

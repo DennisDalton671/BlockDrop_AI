@@ -24,6 +24,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -49,7 +50,7 @@ import kotlin.random.Random
 class MenuScreen {
 
     @Composable
-    fun MenuScreenSetup(navController: NavController) {
+    fun MenuScreenSetup(navController: NavController, themeSettings: MutableState<ThemeSettings>) {
         // Grid size
         val columns = 10
         val rows = 20
@@ -90,7 +91,7 @@ class MenuScreen {
             }
 
             // Render the background grid
-            TetrisMenuBackground(menuBackgroundGrid, cellSize)
+            TetrisMenuBackground(menuBackgroundGrid, cellSize, themeSettings)
 
             // Overlay the menu content
             Column(
@@ -105,13 +106,13 @@ class MenuScreen {
                 Box(
                     modifier = Modifier
                         .size(extendedButtonWidth, cellSize)
-                        .border(1.dp, Color.LightGray)
-                        .background(Color.Black)
+                        .border(1.dp, themeSettings.value.textColor)
+                        .background(themeSettings.value.backgroundColor)
                 ) {
                     Text(
                         text = "Tetris AI",
                         style = MaterialTheme.typography.headlineSmall,
-                        color = Color.LightGray,
+                        color = themeSettings.value.textColor,
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.align(Alignment.Center)
@@ -128,14 +129,14 @@ class MenuScreen {
                 ).forEach { (label, screen) ->
                     Button(
                         onClick = { navController.navigate(screen) },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.Black),
+                        colors = ButtonDefaults.buttonColors(containerColor = themeSettings.value.backgroundColor),
                         shape = RectangleShape,
-                        border = BorderStroke(1.dp, Color.LightGray),
+                        border = BorderStroke(1.dp, themeSettings.value.textColor),
                         modifier = Modifier.size(extendedButtonWidth, cellSize * 2)
                     ) {
                         Text(
                             label,
-                            color = Color.LightGray,
+                            color = themeSettings.value.textColor,
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -149,14 +150,14 @@ class MenuScreen {
                     .size(cellSize)  // 2x2 blocks
                     .offset(x = (screenWidth - horizontalPadding - cellSize * 2), y = verticalPadding + cellSize) // Positioned one block down and one block left from the right wall
                     .clickable { navController.navigate("settingsScreen") }
-                    .background(Color.Black) // Background color to make it visible, replace with your design
-                    .border(1.dp, Color.LightGray),
+                    .background(themeSettings.value.backgroundColor) // Background color to make it visible, replace with your design
+                    .border(1.dp, themeSettings.value.textColor),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Default.Settings,
                     contentDescription = "Settings",
-                    tint = Color.LightGray,
+                    tint = themeSettings.value.textColor,
                     modifier = Modifier.size(cellSize)
                 )
             }
@@ -184,7 +185,7 @@ class MenuScreen {
 
     // Composable function to render the Tetris grid
     @Composable
-    fun TetrisMenuBackground(grid: Array<Array<Cell>>, cellSize: Dp) {
+    fun TetrisMenuBackground(grid: Array<Array<Cell>>, cellSize: Dp, themeSettings: MutableState<ThemeSettings>) {
         Column(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.Center,
@@ -196,8 +197,8 @@ class MenuScreen {
                         Box(
                             modifier = Modifier
                                 .size(cellSize)
-                                .border(1.dp, Color.LightGray)
-                                .background(if (cell == Cell.FILLED) Color.Red else Color.Black)
+                                .border(1.dp, themeSettings.value.textColor)
+                                .background(if (cell == Cell.FILLED) themeSettings.value.blockColor else themeSettings.value.backgroundColor)
                         )
                     }
                 }

@@ -3,6 +3,8 @@ package com.example.tetrisai
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -19,9 +21,23 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        val app = application as TetrisApplication
+        val mediaPlayer = app.mediaPlayer
+        val currentVolume = app.currentVolume
+
         setContent {
+            val themeSettings = remember { mutableStateOf(app.themeSettings) }
+
             TetrisAITheme {
-                TetrisApp(appContainer = appContainer)
+                TetrisApp(
+                    appContainer = app.container,
+                    mediaPlayer = mediaPlayer,
+                    initialVolume = currentVolume,
+                    saveVolume = app::saveVolume,
+                    themeSettings = themeSettings,
+                    saveThemeSettings = app::saveThemeSettings
+                )
             }
         }
     }

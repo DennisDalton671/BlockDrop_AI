@@ -17,6 +17,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -39,15 +40,14 @@ class EndGameScreen {
         doubleLines: Int = 0,
         tripleLines: Int = 0,
         tetrisLines: Int = 0,
-        gameColor: Color = Color.White,
-        backgroundColor: Color = Color.Black,
         navController: NavController,
-        gameState: Int = 0
+        gameState: Int = 0,
+        themeSettings: MutableState<ThemeSettings>
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(backgroundColor),
+                .background(themeSettings.value.backgroundColor),
             contentAlignment = Alignment.Center
         ) {
             Column(
@@ -55,24 +55,23 @@ class EndGameScreen {
                 verticalArrangement = Arrangement.Center,
                 modifier = Modifier.verticalScroll(rememberScrollState())  // Make the column scrollable
             ) {
-                Text("Score: $score", color = gameColor, fontSize = 24.sp, fontWeight = FontWeight.Bold, modifier = Modifier.align(Alignment.CenterHorizontally))
+                Text("Score: $score", color = themeSettings.value.textColor, fontSize = 24.sp, fontWeight = FontWeight.Bold, modifier = Modifier.align(Alignment.CenterHorizontally))
                 Spacer(Modifier.height(24.dp))
-                StatItem("Lines Cleared", linesCleared.toString(), gameColor)
-                StatItem("Level", level.toString(), gameColor)
-                StatItem("Time Played", timePlayed, gameColor)
-                StatItem("Singles", singleLines.toString(), gameColor)
-                StatItem("Doubles", doubleLines.toString(), gameColor)
-                StatItem("Triples", tripleLines.toString(), gameColor)
-                StatItem("Tetrises", tetrisLines.toString(), gameColor)
+                StatItem("Lines Cleared", linesCleared.toString(), themeSettings.value.textColor)
+                StatItem("Level", level.toString(), themeSettings.value.textColor)
+                StatItem("Time Played", timePlayed, themeSettings.value.textColor)
+                StatItem("Singles", singleLines.toString(), themeSettings.value.textColor)
+                StatItem("Doubles", doubleLines.toString(), themeSettings.value.textColor)
+                StatItem("Triples", tripleLines.toString(), themeSettings.value.textColor)
+                StatItem("Tetrises", tetrisLines.toString(), themeSettings.value.textColor)
                 Spacer(Modifier.height(32.dp))
-                ButtonRow(navController, gameState, gameColor)
+                ButtonRow(navController, gameState, themeSettings.value.blockColor, themeSettings.value.textColor)
             }
         }
     }
 
-
     @Composable
-    fun ButtonRow(onReset: () -> Unit, onMainMenu: () -> Unit, buttonColor: Color) {
+    fun ButtonRow(navController: NavController, gameState: Int, buttonColor: Color, textColor: Color) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -80,16 +79,31 @@ class EndGameScreen {
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             Button(
-                onClick = onReset,
+                onClick = {
+                    // Determine game screen route based on game state
+                    val gameScreenRoute = when (gameState) {
+                        0 -> "userGameScreen"
+                        1 -> "aiGameScreen"
+                        2 -> "machineAiGameScreen"
+                        else -> "defaultGameScreen"
+                    }
+                    navController.navigate(gameScreenRoute) {
+                        popUpTo(gameScreenRoute) { inclusive = true }
+                    }
+                },
                 colors = ButtonDefaults.buttonColors(containerColor = buttonColor)
             ) {
-                Text("Reset", color = Color.Black)
+                Text("Reset", color = textColor)
             }
             Button(
-                onClick = onMainMenu,
+                onClick = {
+                    navController.navigate("menuScreen") {
+                        popUpTo("mainMenuScreen") { inclusive = true }
+                    }
+                },
                 colors = ButtonDefaults.buttonColors(containerColor = buttonColor)
             ) {
-                Text("Main Menu", color = Color.Black)
+                Text("Main Menu", color = textColor)
             }
         }
     }
@@ -118,44 +132,6 @@ class EndGameScreen {
                 end = Offset(size.width, 0f),
                 pathEffect = pathEffect
             )
-        }
-    }
-
-    @Composable
-    fun ButtonRow(navController: NavController, gameState: Int, buttonColor: Color) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-            Button(
-                onClick = {
-                    // Determine game screen route based on game state
-                    val gameScreenRoute = when (gameState) {
-                        0 -> "userGameScreen"
-                        1 -> "aiGameScreen"
-                        2 -> "machineAiGameScreen"
-                        else -> "defaultGameScreen"
-                    }
-                    navController.navigate(gameScreenRoute) {
-                        popUpTo(gameScreenRoute) { inclusive = true }
-                    }
-                },
-                colors = ButtonDefaults.buttonColors(containerColor = buttonColor)
-            ) {
-                Text("Reset", color = Color.Black)
-            }
-            Button(
-                onClick = {
-                    navController.navigate("menuScreen") {
-                        popUpTo("mainMenuScreen") { inclusive = true }
-                    }
-                },
-                colors = ButtonDefaults.buttonColors(containerColor = buttonColor)
-            ) {
-                Text("Main Menu", color = Color.Black)
-            }
         }
     }
 }
