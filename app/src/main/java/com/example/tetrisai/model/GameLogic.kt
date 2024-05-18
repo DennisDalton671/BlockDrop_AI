@@ -1,5 +1,6 @@
 package com.example.tetrisai.model
 
+import android.content.Context
 import android.os.Handler
 import android.os.Looper
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -7,7 +8,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlin.random.Random
 
-class GameLogic {
+class GameLogic(val context: Context) {
 
     lateinit var grid: GridRepresentation
     var currentTetrimino: TetrisBlock? = null
@@ -16,12 +17,11 @@ class GameLogic {
     var currentRotation: Int = 0
     var linesCleared: Int = 1
     var lockedPiece: Boolean = false
-    private var gameMode: Int = 0;
+    var gameMode: Int = 0
     private var handler = Handler(Looper.getMainLooper())
     private var lastDropTime = System.currentTimeMillis()
     private var dropInterval = 1000L
-    private val updateInterval = 1000L/60
-    //var gameOver: Boolean = false
+    private val updateInterval = 1000L / 60
     var levelSpeed: Int = 1
     private val _currentGridState = MutableStateFlow<Array<Array<Cell>>>(emptyArray())
     val currentGridState: StateFlow<Array<Array<Cell>>> = _currentGridState.asStateFlow()
@@ -43,112 +43,122 @@ class GameLogic {
     var totalLinesCleared: Int = 0
         private set
 
-    private var previousLinesCleared: Int = 0
-
-    constructor() {
-        this.grid = GridRepresentation(10,20)
-        ai = TetrisAI(this)
-        machineAi = TetrisMachineAi(this)
-        //initializeGame()
+    var previousLinesCleared: Int = 0
+    init {
+        this.grid = GridRepresentation(10, 20)
     }
 
     fun initializeGame(gameMode: Int) {
+        println("Initializing game with mode $gameMode")
+        val startTime = System.currentTimeMillis()
+
         this.gameMode = gameMode
-        // Reset or initialize other game state variables
-        grid.clear() // Assuming you have a method to reset the grid
-        _currentGridState.value = grid.getGridForUI(currentTetrimino,currentX,currentY,currentRotation)
+        grid.clear()
+        _currentGridState.value = grid.getGridForUI(currentTetrimino, currentX, currentY, currentRotation)
         spawnTetrimino()
-        when (gameMode) {
-            1 -> {
-                // Heuristic AI Mode
-                val (rotation, xPosition) = ai.chooseMove()
-                applyAIMove(rotation, xPosition)
-            }
-            2 -> {
-                // Machine Learning AI Mode
-                val previousState = machineAi.getState()  // Capture the current state before applying action
-                val possibleActions = machineAi.getPossibleActions()
+       // stopAllAI()
 
-                // Choose an action based on exploration/exploitation
-                val selectedAction = machineAi.selectAction(previousState, possibleActions)
-
-                // Apply the selected action
-                machineAi.applyAction(selectedAction)
-
-                // Capture the new state and calculate the reward
-                val newState = machineAi.getState()
-                val reward = machineAi.calculateReward()
-
-                // Update the Q-table based on the action's outcome
-                machineAi.updateQTable(previousState, selectedAction, reward, newState)
-            }
+        if (gameMode == 1) {
+            ai = TetrisAI(this)
+            val (rotation, xPosition) = ai.chooseMove()
+            applyAIMove(rotation, xPosition)
         }
+
+        if (gameMode == 2) {
+            machineAi = TetrisMachineAi(this, context)
+            machineAi.stopAi()
+            machineAi.startAi()
+        }
+
         startGameLoop()
-        // Any other game initialization logic
+
+        val endTime = System.currentTimeMillis()
+        println("Game initialized in ${endTime - startTime} ms")
+    }
+
+    private fun stopAllAI() {
+        println("Stopping all AI")
+        machineAi.stopAi()
     }
 
     private fun startGameLoop() {
+        println("Starting game loop")
         handler.postDelayed(object : Runnable {
             override fun run() {
                 if (!gameOverState.value) {
+                    val startTickTime = System.currentTimeMillis()
                     gameTick()
+                    val endTickTime = System.currentTimeMillis()
+                    println("Tick duration: ${endTickTime - startTickTime} ms")
                     handler.postDelayed(this, updateInterval)
+                    val scheduledTime = System.currentTimeMillis()
+                    println("Next tick scheduled in ${updateInterval} ms at ${scheduledTime + updateInterval}")
                 }
             }
         }, updateInterval)
     }
 
     private fun getRandomTetrimino(): TetrisBlock {
+        println("Getting random Tetrimino")
         val tetriminos = TetrisBlock.entries.filter { it != TetrisBlock.EMPTY }
         return tetriminos[Random.nextInt(tetriminos.size)]
     }
 
     private fun spawnTetrimino() {
+        println("Spawning Tetrimino")
+        val startTime = System.currentTimeMillis()
+
         lockedPiece = false
         currentTetrimino = getRandomTetrimino()
-        currentRotation = 0 // Start with default orientation
-        currentX = 4 // Center the Tetrimino horizontally; adjust as needed
-        currentY = -currentTetrimino!!.getShape(currentRotation).size // Start just above the visible grid
+        currentRotation = 0
+        currentX = 4
+        currentY = -currentTetrimino!!.getShape(currentRotation).size
+
+        val endTime = System.currentTimeMillis()
+        println("Tetrimino spawned in ${endTime - startTime} ms")
     }
 
     fun gameTick() {
+        println("Game tick")
+        val startTime = System.currentTimeMillis()
+
         val currentTime = System.currentTimeMillis()
-        _currentGridState.value = grid.getGridForUI(currentTetrimino,currentX,currentY,currentRotation)
+        val gridStartTime = System.currentTimeMillis()
+        _currentGridState.value = grid.getGridForUI(currentTetrimino, currentX, currentY, currentRotation)
+        val gridEndTime = System.currentTimeMillis()
+        println("Updating grid UI took ${gridEndTime - gridStartTime} ms")
+
         if (currentTime - lastDropTime >= dropInterval) {
+            val dropStartTime = System.currentTimeMillis()
             if (!tryMoveCurrentTetriminoDown()) {
+                val lockStartTime = System.currentTimeMillis()
                 lockTetriminoInPlace()
+                val lockEndTime = System.currentTimeMillis()
+                println("Locking Tetrimino took ${lockEndTime - lockStartTime} ms")
+
+                val lineClearStartTime = System.currentTimeMillis()
                 lineClearing()
+                val lineClearEndTime = System.currentTimeMillis()
+                println("Line clearing took ${lineClearEndTime - lineClearStartTime} ms")
+
+                val spawnStartTime = System.currentTimeMillis()
                 spawnTetrimino()
+                val spawnEndTime = System.currentTimeMillis()
+                println("Spawning Tetrimino took ${spawnEndTime - spawnStartTime} ms")
 
-                when (gameMode) {
-                    1 -> {
-                        // Heuristic AI Mode
-                        val (rotation, xPosition) = ai.chooseMove()
-                        applyAIMove(rotation, xPosition)
-                    }
-                    2 -> {
-                        // Machine Learning AI Mode
-                        val previousState = machineAi.getState()  // Capture the current state before applying action
-                        val possibleActions = machineAi.getPossibleActions()
-
-                        // Choose an action based on exploration/exploitation
-                        val selectedAction = machineAi.selectAction(previousState, possibleActions)
-
-                        // Apply the selected action
-                        machineAi.applyAction(selectedAction)
-
-                        // Capture the new state and calculate the reward
-                        val newState = machineAi.getState()
-                        val reward = machineAi.calculateReward()
-
-                        // Update the Q-table based on the action's outcome
-                        machineAi.updateQTable(previousState, selectedAction, reward, newState)
-                    }
+                if (gameMode == 1) {
+                    val aiMoveStartTime = System.currentTimeMillis()
+                    val (rotation, xPosition) = ai.chooseMove()
+                    applyAIMove(rotation, xPosition)
+                    val aiMoveEndTime = System.currentTimeMillis()
+                    println("AI move application took ${aiMoveEndTime - aiMoveStartTime} ms")
                 }
+
                 currentTetrimino?.let { tetrimino ->
                     println("Checking game over for Tetrimino at position ($currentX, $currentY)")
                     println("Tetrimino shape: ${tetrimino.getShape().contentDeepToString()}")
 
+                    val gameOverCheckStartTime = System.currentTimeMillis()
                     if (grid.checkGameOver()) {
                         gameOverState.value = true
                         println("Game over triggered.")
@@ -156,37 +166,48 @@ class GameLogic {
                     } else {
                         println("Game continues.")
                     }
+                    val gameOverCheckEndTime = System.currentTimeMillis()
+                    println("Game over check took ${gameOverCheckEndTime - gameOverCheckStartTime} ms")
                 }
-
             }
+            val dropEndTime = System.currentTimeMillis()
+            println("Drop attempt took ${dropEndTime - dropStartTime} ms")
             lastDropTime = currentTime
         }
+
+        val endTime = System.currentTimeMillis()
+        println("Game tick completed in ${endTime - startTime} ms")
     }
 
     private fun applyAIMove(desiredRotation: Int, desiredXPosition: Int) {
-        System.out.println("X Position: " + desiredXPosition)
-        // Adjust the rotation to match the AI's decision
-        // This loop accounts for the possibility that the Tetrimino needs to be rotated multiple times.
+        println("Applying AI move to rotation $desiredRotation and X position $desiredXPosition")
+        val startTime = System.currentTimeMillis()
+
         while (currentRotation != desiredRotation) {
-            rotate() // Utilizes your existing rotate method
-            // Note: This assumes that your rotation can cycle through all states back to the original.
+            rotate()
+            if (currentRotation == desiredRotation) break
         }
 
-        // Move the Tetrimino horizontally to match the AI's decision
-        // Depending on the current and desired X positions, move left or right as needed.
-        while (currentX < desiredXPosition) {
-            moveRight() // Utilizes your existing moveRight method
-        }
-        while (currentX > desiredXPosition) {
-            moveLeft() // Utilizes your existing moveLeft method
+        if (currentX < desiredXPosition) {
+            for (i in currentX until desiredXPosition) {
+                moveRight()
+            }
+        } else if (currentX > desiredXPosition) {
+            for (i in desiredXPosition until currentX) {
+                moveLeft()
+            }
         }
 
-        // Optionally, drop the Tetrimino immediately after positioning it
-        // This step depends on your game's design and whether such immediate drops are desirable.
-        drop() // Utilizes your existing drop method
+        drop()
+
+        val endTime = System.currentTimeMillis()
+        println("AI move applied in ${endTime - startTime} ms")
     }
 
     fun lockTetriminoInPlace() {
+        println("Locking Tetrimino in place")
+        val startTime = System.currentTimeMillis()
+
         val shape = currentTetrimino?.getShape(currentRotation)
         if (shape != null) {
             lockedPiece = true
@@ -197,62 +218,115 @@ class GameLogic {
                     }
                 }
             }
+            if (gameMode == 2) {
+                machineAi.onPieceLocked()
+            }
         }
+
+        val endTime = System.currentTimeMillis()
+        println("Tetrimino locked in ${endTime - startTime} ms")
     }
 
     fun tryMoveCurrentTetriminoDown(): Boolean {
-        if (isValidMove(currentX, currentY + 1, currentRotation)) {
-            currentY += 1
-            return true
-        }
-        return false
-    }
+        println("Trying to move current Tetrimino down")
+        val startTime = System.currentTimeMillis()
 
+        val result = if (isValidMove(currentX, currentY + 1, currentRotation)) {
+            currentY += 1
+            true
+        } else {
+            false
+        }
+
+        val endTime = System.currentTimeMillis()
+        println("Move down attempt completed in ${endTime - startTime} ms")
+        return result
+    }
     fun moveLeft() {
+        println("Moving left")
+        val startTime = System.currentTimeMillis()
+
         if (isValidMove(currentX - 1, currentY, currentRotation)) {
             currentX -= 1
-            _currentGridState.value = grid.getGridForUI(currentTetrimino,currentX,currentY,currentRotation)
+            _currentGridState.value = grid.getGridForUI(currentTetrimino, currentX, currentY, currentRotation)
+        } else {
+            println("Move left blocked")
         }
+
+        val endTime = System.currentTimeMillis()
+        println("Move left completed in ${endTime - startTime} ms")
     }
 
     fun moveRight() {
+        println("Moving right")
+        val startTime = System.currentTimeMillis()
+
         if (isValidMove(currentX + 1, currentY, currentRotation)) {
             currentX += 1
-            _currentGridState.value = grid.getGridForUI(currentTetrimino,currentX,currentY,currentRotation)
+            _currentGridState.value = grid.getGridForUI(currentTetrimino, currentX, currentY, currentRotation)
+        } else {
+            println("Move right blocked")
         }
-    }
 
+        val endTime = System.currentTimeMillis()
+        println("Move right completed in ${endTime - startTime} ms")
+    }
     fun movePieceToX(xPosition: Int) {
+        println("Moving Tetrimino to X position $xPosition")
+        val startTime = System.currentTimeMillis()
+
         if (isValidMove(xPosition, currentY, currentRotation)) {
             currentX = xPosition
-            _currentGridState.value = grid.getGridForUI(currentTetrimino,currentX,currentY,currentRotation)
+            _currentGridState.value = grid.getGridForUI(currentTetrimino, currentX, currentY, currentRotation)
         }
+
+        val endTime = System.currentTimeMillis()
+        println("Move to X position completed in ${endTime - startTime} ms")
     }
 
     fun rotatePieceTo(rotation: Int) {
-        val newRotation = (rotation) % currentTetrimino!!.shapes.size // Assuming 4 rotations
+        println("Rotating Tetrimino to rotation $rotation")
+        val startTime = System.currentTimeMillis()
+
+        val newRotation = (rotation) % currentTetrimino!!.shapes.size
         if (isValidMove(currentX, currentY, newRotation)) {
             currentRotation = newRotation
-            _currentGridState.value = grid.getGridForUI(currentTetrimino,currentX,currentY,currentRotation)
+            _currentGridState.value = grid.getGridForUI(currentTetrimino, currentX, currentY, currentRotation)
         }
+
+        val endTime = System.currentTimeMillis()
+        println("Rotate to completed in ${endTime - startTime} ms")
     }
 
     fun rotate() {
-        val newRotation = (currentRotation + 1) % currentTetrimino!!.shapes.size // Assuming 4 rotations
+        println("Rotating Tetrimino")
+        val startTime = System.currentTimeMillis()
+
+        val newRotation = (currentRotation + 1) % currentTetrimino!!.shapes.size
         if (isValidMove(currentX, currentY, newRotation)) {
             currentRotation = newRotation
-            _currentGridState.value = grid.getGridForUI(currentTetrimino,currentX,currentY,currentRotation)
+            _currentGridState.value = grid.getGridForUI(currentTetrimino, currentX, currentY, currentRotation)
         }
+
+        val endTime = System.currentTimeMillis()
+        println("Rotation completed in ${endTime - startTime} ms")
     }
 
     fun drop() {
+        println("Dropping Tetrimino")
+        val startTime = System.currentTimeMillis()
+
         while (isValidMove(currentX, currentY + 1, currentRotation)) {
             currentY += 1
-            _currentGridState.value = grid.getGridForUI(currentTetrimino,currentX,currentY,currentRotation)
+            _currentGridState.value = grid.getGridForUI(currentTetrimino, currentX, currentY, currentRotation)
         }
+
+        val endTime = System.currentTimeMillis()
+        println("Drop completed in ${endTime - startTime} ms")
     }
 
     fun isValidMove(newX: Int, newY: Int, newRotation: Int): Boolean {
+        val startTime = System.currentTimeMillis()
         val shape = currentTetrimino?.getShape(newRotation)
         if (shape != null) {
             for (y in shape.indices) {
@@ -261,28 +335,33 @@ class GameLogic {
                         val gridX = newX + x
                         val gridY = newY + y
 
-                        // Check boundary conditions
                         if (gridX < 0 || gridX >= grid.width || gridY >= grid.height) {
+                            val endTime = System.currentTimeMillis()
+                            println("isValidMove out of bounds check took ${endTime - startTime} ms")
                             return false
                         }
 
-                        // Check for collision with placed blocks
                         if (gridY >= 0 && grid.isOccupied(gridX, gridY)) {
+                            val endTime = System.currentTimeMillis()
+                            println("isValidMove collision check took ${endTime - startTime} ms")
                             return false
                         }
                     }
                 }
             }
         }
+        val endTime = System.currentTimeMillis()
+        println("isValidMove completed in ${endTime - startTime} ms")
         return true
     }
 
     private fun lineClearing() {
-        // Clear lines and get the number cleared
+        println("Clearing lines")
+        val startTime = System.currentTimeMillis()
+
         val linesClearedNow: Int = grid.clearLines()
         linesCleared += linesClearedNow
 
-        // Calculate points based on lines cleared at once
         val basePoints = when (linesClearedNow) {
             1 -> 40
             2 -> 100
@@ -300,32 +379,82 @@ class GameLogic {
 
         _score.value += basePoints * _level.value
 
-        // Update level based on the total lines cleared
         if (linesCleared % 10 == 0 && linesClearedNow > 0) {
             _level.value++
             dropInterval = (dropInterval / 1.5).toLong()
         }
 
-        // Notify listeners about updates
         onLineUpdated?.invoke(linesCleared)
         onScoreUpdated?.invoke(_score.value)
         onLevelUpdated?.invoke(_level.value)
 
-        // Store how many lines were cleared since the last check
-        previousLinesCleared = totalLinesCleared
+        previousLinesCleared = linesCleared
+
+        val endTime = System.currentTimeMillis()
+        println("Lines cleared in ${endTime - startTime} ms")
     }
 
     fun linesClearedSinceLast(): Int {
-        val clearedSinceLast = totalLinesCleared - previousLinesCleared
-        previousLinesCleared = totalLinesCleared
-
+        val clearedSinceLast = linesCleared - previousLinesCleared
+        previousLinesCleared = linesCleared
         return clearedSinceLast
     }
 
     fun endGame() {
-        gameOverState.value = true
-        onGameOver?.invoke(true) // Notify observers that the game is over
-       // initializeGame(gameMode = gameMode)
+        println("Ending game")
+        val startTime = System.currentTimeMillis()
+
+        //stopAllAI()
+        if (gameMode == 2) {
+            machineAi.saveQTable()
+            machineAi.stopAi()
+            println("Machine AI game over. Restarting...")
+            machineAi.trackPerformance()
+            resetGame()
+            initializeGame(2)
+        } else {
+            gameOverState.value = true
+            onGameOver?.invoke(true)
+        }
+
+        val endTime = System.currentTimeMillis()
+        println("Game ended in ${endTime - startTime} ms")
     }
 
+    fun resetGame() {
+        println("Resetting game")
+        val startTime = System.currentTimeMillis()
+
+        grid = GridRepresentation(10, 20)
+        currentTetrimino = null
+        currentX = 0
+        currentY = 0
+        currentRotation = 0
+        linesCleared = 1
+        lockedPiece = false
+        _currentGridState.value = grid.getGridForUI(currentTetrimino, currentX, currentY, currentRotation)
+        _score.value = 0
+        _level.value = 1
+        totalLinesCleared = 0
+        previousLinesCleared = 0
+        gameOverState.value = false
+
+        onLineUpdated?.invoke(linesCleared)
+        onScoreUpdated?.invoke(_score.value)
+        onLevelUpdated?.invoke(_level.value)
+
+        val endTime = System.currentTimeMillis()
+        println("Game reset in ${endTime - startTime} ms")
+    }
+
+    fun gridToString(): String {
+        val sb = StringBuilder()
+        for (row in grid.grid) {
+            for (cell in row) {
+                sb.append(if (cell == Cell.EMPTY) '0' else '1')
+            }
+            sb.append('|')
+        }
+        return sb.toString()
+    }
 }

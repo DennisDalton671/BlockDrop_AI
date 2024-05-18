@@ -1,5 +1,6 @@
 package com.example.tetrisai
 
+import android.content.Context
 import android.media.MediaPlayer
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.fillMaxSize
@@ -32,7 +33,8 @@ fun TetrisApp(
     initialVolume: Float,
     saveVolume: (Float) -> Unit,
     themeSettings: MutableState<ThemeSettings>,
-    saveThemeSettings: (ThemeSettings) -> Unit
+    saveThemeSettings: (ThemeSettings) -> Unit,
+    context: Context
 ) {
 // Use Material3 if available, or Material2's Scaffold as shown
     val navController = rememberNavController()
@@ -51,19 +53,19 @@ fun TetrisApp(
                 MenuScreen().MenuScreenSetup(navController, themeSettings)
             }
             composable("userGameScreen") {
-                val factory = GameStateManagerFactory(gameMode = 0)
+                val factory = GameStateManagerFactory(gameMode = 0, context = context)
                 val gameState = viewModel<GameStateManager>(factory = factory)
                 //val gameState = viewModel<GameStateManager>()
                 GameScreen().GameScreenSetup(gameView = gameState, navController, themeSettings = themeSettings, 0)
             }
             composable("aiGameScreen") {
-                val factory = GameStateManagerFactory(gameMode = 1)
+                val factory = GameStateManagerFactory(gameMode = 1, context = context)
                 val gameState = viewModel<GameStateManager>(factory = factory)
                 //val gameState = viewModel<GameStateManager>()
                 GameScreen().GameScreenSetup(gameView = gameState, navController = navController, themeSettings = themeSettings, 1)
             }
             composable("machineAiGameScreen") {
-                val factory = GameStateManagerFactory(gameMode = 2)
+                val factory = GameStateManagerFactory(gameMode = 2, context = context)
                 val gameState = viewModel<GameStateManager>(factory = factory)
                 //val gameState = viewModel<GameStateManager>()
                 GameScreen().GameScreenSetup(gameView = gameState, navController = navController, themeSettings = themeSettings, 1)

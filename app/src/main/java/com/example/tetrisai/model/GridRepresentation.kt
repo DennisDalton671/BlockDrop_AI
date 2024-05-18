@@ -354,24 +354,23 @@ class GridRepresentation(val width: Int, val height: Int) {
     }
 
     fun getGridForUI(tetrisBlock: TetrisBlock?, currentX: Int, currentY: Int, rotation: Int): Array<Array<Cell>> {
-        // Create a copy of the grid
         val gridCopy = Array(height) { Array(width) { Cell.EMPTY } }
 
-        for (y in 0 until height) {
-            for (x in 0 until width) {
+        // Copy existing grid state
+        for (y in grid.indices) {
+            for (x in grid[y].indices) {
                 gridCopy[y][x] = grid[y][x]
             }
         }
 
-        // Then, overlay the falling Tetrimino
+        // Overlay the falling Tetrimino
         tetrisBlock?.let { block ->
-            val shape = block.getShape(rotation) // Assuming getShape accounts for rotation
+            val shape = block.getShape(rotation)
             for (y in shape.indices) {
                 for (x in shape[y].indices) {
                     if (shape[y][x]) {
                         val posX = currentX + x
                         val posY = currentY + y
-                        // Check bounds to prevent ArrayIndexOutOfBoundsException
                         if (posX in 0 until width && posY in 0 until height) {
                             gridCopy[posY][posX] = Cell.FILLED
                         }

@@ -1,6 +1,7 @@
 package com.example.tetrisai
 
 import android.os.Bundle
+import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.mutableStateOf
@@ -22,6 +23,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+
         val app = application as TetrisApplication
         val mediaPlayer = app.mediaPlayer
         val currentVolume = app.currentVolume
@@ -36,7 +39,8 @@ class MainActivity : ComponentActivity() {
                     initialVolume = currentVolume,
                     saveVolume = app::saveVolume,
                     themeSettings = themeSettings,
-                    saveThemeSettings = app::saveThemeSettings
+                    saveThemeSettings = app::saveThemeSettings,
+                    context = this
                 )
             }
         }
