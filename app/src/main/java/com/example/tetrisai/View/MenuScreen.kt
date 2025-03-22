@@ -110,7 +110,7 @@ class MenuScreen {
                         .background(themeSettings.value.backgroundColor)
                 ) {
                     Text(
-                        text = "Tetris AI",
+                        text = "BlockDrop AI",
                         style = MaterialTheme.typography.headlineSmall,
                         color = themeSettings.value.textColor,
                         fontSize = 20.sp,
